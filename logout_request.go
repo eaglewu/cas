@@ -18,7 +18,7 @@ type logoutRequest struct {
 	SessionIndex    string    `xml:"SessionIndex"`
 }
 
-func parseLogoutRequest(data []byte) (*logoutRequest, error) {
+func ParseLogoutRequest(data []byte) (*logoutRequest, error) {
 	l := &logoutRequest{}
 	if err := xml.Unmarshal(data, &l); err != nil {
 		return nil, err

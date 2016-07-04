@@ -24,15 +24,15 @@ func (ch *clientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		glog.Infof("cas: handling %v request for %v", r.Method, r.URL)
 	}
 
-	setClient(r, ch.c)
-	defer clear(r)
+	SetClient(r, ch.c)
+	defer Clear(r)
 
-	if isSingleLogoutRequest(r) {
+	if IsSingleLogoutRequest(r) {
 		ch.performSingleLogout(w, r)
 		return
 	}
 
-	ch.c.getSession(w, r)
+	ch.c.GetSession(w, r)
 	ch.h.ServeHTTP(w, r)
 	return
 }
@@ -40,7 +40,7 @@ func (ch *clientHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // isSingleLogoutRequest determines if the http.Request is a CAS Single Logout Request.
 //
 // The rules for a SLO request are, HTTP POST urlencoded form with a logoutRequest parameter.
-func isSingleLogoutRequest(r *http.Request) bool {
+func IsSingleLogoutRequest(r *http.Request) bool {
 	if r.Method != "POST" {
 		return false
 	}
@@ -60,7 +60,7 @@ func isSingleLogoutRequest(r *http.Request) bool {
 // performSingleLogout processes a single logout request
 func (ch *clientHandler) performSingleLogout(w http.ResponseWriter, r *http.Request) {
 	rawXML := r.FormValue("logoutRequest")
-	logoutRequest, err := parseLogoutRequest([]byte(rawXML))
+	logoutRequest, err := ParseLogoutRequest([]byte(rawXML))
 
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -72,7 +72,7 @@ func (ch *clientHandler) performSingleLogout(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	ch.c.deleteSession(logoutRequest.SessionIndex)
+	ch.c.DeleteSession(logoutRequest.SessionIndex)
 
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintln(w, "OK")

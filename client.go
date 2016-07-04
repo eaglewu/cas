@@ -321,7 +321,7 @@ func (c *Client) validateTicketCas1(ticket string, service *http.Request) error 
 //
 // A cookie is set on the response if one is not provided with the request.
 // Validates the ticket if the URL parameter is provided.
-func (c *Client) getSession(w http.ResponseWriter, r *http.Request) {
+func (c *Client) GetSession(w http.ResponseWriter, r *http.Request) {
 	cookie := getCookie(w, r)
 
 	if s, ok := c.sessions[cookie.Value]; ok {
@@ -441,14 +441,14 @@ func (c *Client) clearSession(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		c.deleteSession(s)
+		c.DeleteSession(s)
 	}
 
 	clearCookie(w, cookie)
 }
 
 // deleteSession removes the session from the client
-func (c *Client) deleteSession(id string) {
+func (c *Client) DeleteSession(id string) {
 	c.mu.Lock()
 	delete(c.sessions, id)
 	c.mu.Unlock()
@@ -473,5 +473,9 @@ func (c *Client) findAndDeleteSessionWithTicket(ticket string) {
 		return
 	}
 
-	c.deleteSession(id)
+	c.DeleteSession(id)
+}
+
+func (c *Client) GetTickets() TicketStore{
+	return c.tickets
 }

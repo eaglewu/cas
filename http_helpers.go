@@ -13,7 +13,7 @@ var (
 )
 
 // setClient associates a Client with a http.Request.
-func setClient(r *http.Request, c *Client) {
+func SetClient(r *http.Request, c *Client) {
 	mutex.Lock()
 	defer mutex.Unlock()
 
@@ -21,7 +21,7 @@ func setClient(r *http.Request, c *Client) {
 }
 
 // getClient retrieves the Client associated with the http.Request.
-func getClient(r *http.Request) *Client {
+func GetClient(r *http.Request) *Client {
 	mutex.RLock()
 	defer mutex.RUnlock()
 
@@ -31,7 +31,7 @@ func getClient(r *http.Request) *Client {
 // RedirectToLogin allows CAS protected handlers to redirect a request
 // to the CAS login page.
 func RedirectToLogin(w http.ResponseWriter, r *http.Request) {
-	c := getClient(r)
+	c := GetClient(r)
 	if c == nil {
 		err := "cas: redirect to cas failed as no client associated with request"
 		http.Error(w, err, http.StatusInternalServerError)
@@ -44,7 +44,7 @@ func RedirectToLogin(w http.ResponseWriter, r *http.Request) {
 // RedirectToLogout allows CAS protected handlers to redirect a request
 // to the CAS logout page.
 func RedirectToLogout(w http.ResponseWriter, r *http.Request) {
-	c := getClient(r)
+	c := GetClient(r)
 	if c == nil {
 		err := "cas: redirect to cas failed as no client associated with request"
 		http.Error(w, err, http.StatusInternalServerError)
@@ -73,7 +73,7 @@ func getAuthenticationResponse(r *http.Request) *AuthenticationResponse {
 }
 
 // clear removes the Client and AuthenticationResponse associations of a http.Request.
-func clear(r *http.Request) {
+func Clear(r *http.Request) {
 	mutex.Lock()
 	defer mutex.Unlock()
 
