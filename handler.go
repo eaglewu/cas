@@ -3,13 +3,19 @@ package cas
 import (
 	"fmt"
 	"net/http"
+	"sync"
 
 	"github.com/golang/glog"
 )
 
-const (
-	sessionCookieName = "_cas_session"
-)
+var sessionCookieName = "_cas_session"
+var cookieNameMu sync.Mutex
+
+func SetCookieName(name string) {
+	cookieNameMu.Lock()
+	sessionCookieName = name
+	cookieNameMu.Unlock()
+}
 
 // clientHandler handles CAS Protocol HTTP requests
 type clientHandler struct {

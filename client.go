@@ -13,8 +13,10 @@ import (
 
 // Client configuration options
 type Options struct {
-	URL   *url.URL    // URL to the CAS service
-	Store TicketStore // Custom TicketStore, if nil a MemoryStore will be used
+	URL          *url.URL    // URL to the CAS service
+	Store        TicketStore // Custom TicketStore, if nil a MemoryStore will be used
+	CookieDomain string      // Set Custom cookie domain
+	CookieName   string
 }
 
 // Client implements the main protocol
@@ -23,8 +25,9 @@ type Client struct {
 	tickets TicketStore
 	client  *http.Client
 
-	mu       sync.Mutex
-	sessions map[string]string
+	mu            sync.Mutex
+	sessions      map[string]string
+	cookie_domain string
 }
 
 // NewClient creates a Client with the provided Options.
@@ -40,11 +43,16 @@ func NewClient(options *Options) *Client {
 		tickets = &MemoryStore{}
 	}
 
+	if len(options.CookieName) > 0 {
+		SetCookieName(options.CookieName)
+	}
+
 	return &Client{
-		url:      options.URL,
-		tickets:  tickets,
-		client:   &http.Client{},
-		sessions: make(map[string]string),
+		url:           options.URL,
+		tickets:       tickets,
+		client:        &http.Client{},
+		sessions:      make(map[string]string),
+		cookie_domain: options.CookieDomain,
 	}
 }
 
@@ -322,7 +330,7 @@ func (c *Client) validateTicketCas1(ticket string, service *http.Request) error 
 // A cookie is set on the response if one is not provided with the request.
 // Validates the ticket if the URL parameter is provided.
 func (c *Client) GetSession(w http.ResponseWriter, r *http.Request) {
-	cookie := getCookie(w, r)
+	cookie := c.getCookie(w, r)
 
 	if s, ok := c.sessions[cookie.Value]; ok {
 		if t, err := c.tickets.Read(s); err == nil {
@@ -374,7 +382,7 @@ func (c *Client) GetSession(w http.ResponseWriter, r *http.Request) {
 }
 
 // getCookie finds or creates the session cookie on the response.
-func getCookie(w http.ResponseWriter, r *http.Request) *http.Cookie {
+func (this *Client) getCookie(w http.ResponseWriter, r *http.Request) *http.Cookie {
 	c, err := r.Cookie(sessionCookieName)
 	if err != nil {
 		// NOTE: Intentionally not enabling HttpOnly so the cookie can
@@ -384,6 +392,8 @@ func getCookie(w http.ResponseWriter, r *http.Request) *http.Cookie {
 			Value:    newSessionId(),
 			MaxAge:   86400,
 			HttpOnly: false,
+			Domain:   this.cookie_domain,
+			Path:     "/",
 		}
 
 		if glog.V(2) {
@@ -431,7 +441,7 @@ func (c *Client) setSession(id string, ticket string) {
 
 // clearSession removes the session from the client and clears the cookie.
 func (c *Client) clearSession(w http.ResponseWriter, r *http.Request) {
-	cookie := getCookie(w, r)
+	cookie := c.getCookie(w, r)
 
 	if s, ok := c.sessions[cookie.Value]; ok {
 		if err := c.tickets.Delete(s); err != nil {
@@ -476,6 +486,10 @@ func (c *Client) findAndDeleteSessionWithTicket(ticket string) {
 	c.DeleteSession(id)
 }
 
-func (c *Client) GetTickets() TicketStore{
+func (c *Client) GetTickets() TicketStore {
 	return c.tickets
+}
+
+func (c *Client) SetCookieDomain(domain string) {
+	c.cookie_domain = domain
 }
